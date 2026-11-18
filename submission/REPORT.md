@@ -45,7 +45,19 @@ Máy tự sửa **35** thay đổi (`03_fixes.csv`: 20 drop_line, 8 clip_box, 6 
 3. **Ảnh trùng biến đổi mạnh:** trên calib, DUP_IMAGE_NEAR recall chỉ 0,67 ở phash 10 (bỏ sót 2/6 bản sao chèn); muốn bắt hết phải nâng phash lên mức gộp nhầm ảnh khác (xem §3).
 
 ## 5. Train: raw vs clean (tùy chọn, chấm riêng)
-Chưa chạy: chưa có thời gian train trên Colab trong buổi lab. Không có số liệu nên không kết luận gì về raw vs clean.
+Train **cục bộ trên Apple M5 (`mps`)** bằng `make train` (không dùng Colab T4): yolo26n, 20 epoch, 2 seed (0, 1), imgsz 640, đo trên test 100 ảnh. `clean` là bản nháp từ kết luận Hold.
+
+| biến thể | #ảnh train | số seed | map50 (TB ± độ lệch) | map50_95 (TB ± độ lệch) | precision (TB ± độ lệch) | recall (TB ± độ lệch) |
+|---|---|---|---|---|---|---|
+| raw | 224 | 2 | 0.712 ± 0.018 | 0.511 ± 0.021 | 0.675 ± 0.039 | 0.678 ± 0.027 |
+| clean | 202 | 2 | 0.710 ± 0.004 | 0.500 ± 0.004 | 0.730 ± 0.002 | 0.620 ± 0.025 |
+
+**Kết luận: chưa kết luận được clean tốt hơn raw.** Chênh mAP50 (clean − raw) = **−0,002**, nhỏ hơn nhiều so với độ lệch giữa các seed của raw (±0,018; hai seed raw cách nhau 0,025: 0,699 vs 0,725). mAP50-95 cũng nằm trong nhiễu (−0,011 vs ±0,021). Điểm khác rõ hơn nhiễu: clean có precision cao hơn (0,730 vs 0,675) nhưng recall thấp hơn (0,620 vs 0,678); chỉ 2 seed nên cũng chưa chắc.
+
+Giả thuyết và cách kiểm:
+1. **Rò rỉ test làm raw được điểm ảo:** raw còn 5 ảnh LEAK_TEST (trùng test_009/033/039/044/085) và 12 ảnh trùng. Kiểm: đo lại trên test **bỏ 5 ảnh bị rò rỉ** và so raw vs clean.
+2. **Nhãn trong clean chưa sạch hết:** 38/202 ảnh còn cảnh báo chưa người xem (13 MISSING, 20 LOOSE_BOX, 21 FALSE_POS) và 4 ảnh EMPTY_LABEL; box thiếu có thể là lý do recall clean thấp hơn. Kiểm: duyệt hết hàng đợi (hoặc chạy thêm biến thể `oracle`) rồi train lại.
+3. **Mẫu nhỏ:** clean ít hơn raw 22 ảnh, test chỉ 100 ảnh, chỉ 2 seed × 20 epoch. Kiểm: chạy 3+ seed, 40 epoch như gợi ý trong `train_compare.py`.
 
 ## 6. Quyết định và ghi chú AI
 **(a) Quyết định cuối: Hold.** Không có lỗi bắt buộc, nhưng 38/202 ảnh còn cảnh báo chưa người xem. Để thành Release: (1) tăng ngân sách duyệt thêm ≥ 18 ảnh trong số 45 ảnh còn lại của hàng đợi (để còn < 20/202 = 10%), ưu tiên 13 ảnh POSSIBLE_MISSING và 3 ảnh WRONG_CLASS; hoặc (2) cải thiện checker để giảm báo động giả (FALSE_POS precision chỉ 0,31 trên calib), **không** nâng `conf` chỉ để hàng đợi nhỏ lại.
