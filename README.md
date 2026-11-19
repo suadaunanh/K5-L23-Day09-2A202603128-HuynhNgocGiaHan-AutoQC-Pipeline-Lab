@@ -2,7 +2,7 @@
   <img src="docs/assets/hero.png" alt="Day 09 Lab: pipeline kiểm nhãn tự động" width="100%">
 </p>
 
-# Day 09 Lab — Huỳnh Ngọc Gia Hân: 2A202603128 
+# Day 09 Lab — Huỳnh Ngọc Gia Hân: 2A202603128 - Huỳnh Ngọc Gia Hân
 
 
 <p align="center">
